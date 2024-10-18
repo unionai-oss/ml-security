@@ -21,6 +21,14 @@ class Model:
     file: FlyteFile
     md5hash: str
 
+    def __post_init__(self):
+        with open(self.file, "rb") as f:
+            md5hash = hashlib.md5(f.read()).hexdigest()
+        if md5hash != self.md5hash:
+            raise ValueError(
+                f"⛔️ Model md5hash mismatch: expected {self.md5hash}, found {md5hash}."
+            )
+
 
 @task
 def load_data() -> tuple[pd.DataFrame, pd.Series]:
@@ -47,14 +55,6 @@ def train_model(X_train: pd.DataFrame, y_train: pd.Series) -> Model:
 
 @task(enable_deck=True)
 def evaluate_model(model: Model, X_test: pd.DataFrame, y_test: pd.Series) -> float:
-
-    with open(model.file, "rb") as f:
-        md5hash = hashlib.md5(f.read()).hexdigest()
-    if md5hash != model.md5hash:
-        raise ValueError(
-            f"⛔️ Model md5hash mismatch: expected {model.md5hash}, found {md5hash}."
-        )
-
     with open(model.file, "rb") as f:
         model = joblib.load(f)
     y_pred = model.predict(X_test)
