@@ -1,6 +1,6 @@
-import os
-from functools import partial
-from pathlib import Path
+import hashlib
+from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 
 import flytekit as fk
 import joblib
@@ -12,25 +12,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
+from .train import task
 
 
-registry = None
-if int(os.getenv("SANDBOX", 0)):
-    registry = "localhost:30000"
+@dataclass_json
+@dataclass
+class Model:
+    file: FlyteFile
+    md5hash: str
 
-
-image = fk.ImageSpec(
-    name="ml-security",
-    requirements=Path(__file__).parent / "requirements.txt",
-    registry=registry,
-)
-
-task = partial(
-    fk.task,
-    container_image=image,
-    cache=True,
-    cache_version="2",
-)
+    def __post_init__(self):
+        with open(self.file, "rb") as f:
+            md5hash = hashlib.md5(f.read()).hexdigest()
+        if md5hash != self.md5hash:
+            raise ValueError(
+                f"⛔️ Model md5hash mismatch: expected {self.md5hash}, found {md5hash}."
+            )
 
 
 @task
@@ -47,17 +44,18 @@ def split_data(X: pd.DataFrame, y: pd.Series) -> tuple[pd.DataFrame, pd.DataFram
 
 
 @task
-def train_model(X_train: pd.DataFrame, y_train: pd.Series) -> FlyteFile:
+def train_model(X_train: pd.DataFrame, y_train: pd.Series) -> Model:
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     path = "model.joblib"
     joblib.dump(model, path)
-    return FlyteFile(path=path)
+    md5hash = hashlib.md5(open(path, 'rb').read()).hexdigest()
+    return Model(file=FlyteFile(path=path), md5hash=md5hash)
 
 
 @task(enable_deck=True)
-def evaluate_model(model: FlyteFile, X_test: pd.DataFrame, y_test: pd.Series) -> float:
-    with open(model, "rb") as f:
+def evaluate_model(model: Model, X_test: pd.DataFrame, y_test: pd.Series) -> float:
+    with open(model.file, "rb") as f:
         model = joblib.load(f)
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)

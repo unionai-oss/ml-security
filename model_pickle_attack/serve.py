@@ -4,7 +4,7 @@ import pandas as pd
 
 from flytekit.types.file import FlyteFile
 
-from train import image
+from .train import image
 
 
 

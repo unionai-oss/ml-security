@@ -3,4 +3,4 @@ pandas
 pyarrow
 scikit-learn
 union
-dataclasses-json
+openai
