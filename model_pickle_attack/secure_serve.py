@@ -8,7 +8,7 @@ from .train import image
 from .secure_train import Model
 
 
-@fk.task
+@fk.task(container_image=image)
 def model_guard(model: FlyteFile, md5hash: str) -> Model:
     return Model(file=model, md5hash=md5hash)
 

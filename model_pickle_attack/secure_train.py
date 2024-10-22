@@ -26,7 +26,8 @@ class Model:
             md5hash = hashlib.md5(f.read()).hexdigest()
         if md5hash != self.md5hash:
             raise ValueError(
-                f"⛔️ Model md5hash mismatch: expected {self.md5hash}, found {md5hash}."
+                "⛔️ Model md5hash mismatch: expected "
+                f"{self.md5hash}, found {md5hash}."
             )
 
 

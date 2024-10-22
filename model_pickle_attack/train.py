@@ -29,7 +29,7 @@ task = partial(
     fk.task,
     container_image=image,
     cache=True,
-    cache_version="2",
+    cache_version="3",
 )
 
 

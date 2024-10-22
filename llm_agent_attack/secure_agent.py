@@ -134,5 +134,9 @@ def parse_output(output: str) -> str:
 @fk.workflow
 def run(prompt: str) -> str:
     code = generate_code(prompt)
-    approved_code = fk.approve(code, "approve", timeout=timedelta(minutes=10))
+    approved_code = fk.approve(
+        code,
+        "approve",
+        timeout=timedelta(minutes=10)
+    )
     return python_tool(approved_code)
